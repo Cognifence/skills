@@ -31,17 +31,47 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
    the one that takes user text and returns the agent's reply. If more than one plausibly fits, ask
    the user which one; otherwise proceed with the obvious one.
 
-3. **Wire up Connect.** Install the SDK and drop in an adapter that forwards one chat turn to that
-   handler:
+3. **Wire up Connect.** The whole integration is a single `connect()` call wired to the handler
+   from step 2 — a few lines, not a new subsystem. Prefer the smallest change that works:
    - **Install the SDK** — NOT from a public registry. JS: `bun add`/`npm i` the GitHub Release
      tarball. Python: pin it in `[tool.uv.sources]` by git tag. Exact commands and options:
      `references/connect-sdk.md`.
-   - **Copy an adapter** from `references/adapter-templates/` (`connect_adapter.mjs` or
-     `connect_adapter.py`) and connect its one marked `customerHandler(message) -> reply` seam to
-     the handler from step 2.
-   - The manifest is fixed: one duplex channel named `chat`, no tools (tools are optional). Read
-     `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the environment — do not hard-code them. The
-     URL must be `wss://` (plaintext `ws://` is refused except toward localhost).
+   - **Drop in the minimal snippet** at an entry point in the user's app, replacing only the marked
+     line with a call into the step-2 handler:
+
+     JS:
+     ```js
+     import { connect } from "@cognifence/connect";
+     const agent = await connect({
+       url: process.env.COGNI_CONNECT_URL,
+       token: process.env.COGNI_CONNECT_KEY,
+       manifest: { channels: [{ name: "chat", direction: "duplex" }], tools: [] },
+       onMessage: async (msg) => reply(msg.body),   // ← the step-2 (message)->reply handler
+     });
+     await agent.done;
+     ```
+
+     Python:
+     ```python
+     from cognifence_connect import connect
+     async def on_message(msg, ctx):
+         return await reply(msg.body)               # ← the step-2 (message)->reply handler
+     agent = await connect(
+         url=os.environ["COGNI_CONNECT_URL"],
+         token=os.environ["COGNI_CONNECT_KEY"],
+         manifest={"channels": [{"name": "chat", "direction": "duplex"}], "tools": []},
+         on_message=on_message,
+     )
+     await agent.wait()
+     ```
+   - That snippet IS the integration. The manifest is fixed (one duplex channel named `chat`, no
+     tools; tools are optional). Read `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the
+     environment — do not hard-code them; the URL must be `wss://` (plaintext `ws://` is refused
+     except toward localhost).
+   - **Only if the user needs a hardened long-running process** (graceful SIGTERM shutdown,
+     terminal-error exit codes, env-var validation, cancellation via `ctx.signal`), copy the fuller
+     adapter from `references/adapter-templates/` (`connect_adapter.mjs` / `connect_adapter.py`)
+     instead — it is the same `connect()` call with that scaffolding around it.
 
 4. **Provision over MCP.** Collect a SHORT blurb from the user: the agent's name plus 1–3
    sentences on what it does. Then, in order:
