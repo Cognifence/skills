@@ -82,8 +82,24 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
      adapter from `references/adapter-templates/` (`connect_adapter.mjs` / `connect_adapter.py`)
      instead — it is the same `connect()` call with that scaffolding around it.
 
-4. **Provision over MCP.** Collect a SHORT blurb from the user: the agent's name plus 1–3
-   sentences on what it does. Then, in order:
+4. **Provision over MCP.** Collect the agent's **name** and a **full description** — not a
+   one-liner. The description is the durable record shown in the app and is folded into the
+   evaluation, so it must be specific and testable. Write it in plain present-tense prose
+   (~1000–2500 characters) covering all eight points (the same structure the app's agent form
+   enforces — see the `create_agent` `description` field hint for the authoritative list):
+   1. what the agent is and its core job, in one sentence;
+   2. who uses it and who it serves;
+   3. its main tasks, concretely;
+   4. the channels it works through (chat, email, SMS, phone, API, …);
+   5. the systems and tools it connects to, and whether it reads or writes them;
+   6. what it may do on its own vs. what waits for human approval;
+   7. how it behaves when it is unsure;
+   8. anything it must never do.
+
+   Pull what you can from the user's repo (README, system prompt, tool wiring) and confirm the
+   gaps with the user rather than inventing systems, channels, or policies. Also keep a **1–3
+   sentence blurb** (a plain summary of points 1–3) for the starter evaluation in step 5 — that
+   input is short by design; do NOT pass this long description there. Then, in order:
    - `create_agent` `{ name, description }` -> keep the returned `agentId`.
    - `set_agent_connection` `{ agentId, protocol: "cognifence_connect" }`.
    - `mint_connect_key` `{ agentId }` -> store the returned `token` as `COGNI_CONNECT_KEY` in the
@@ -94,8 +110,9 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
    `session.hello` on start; a clean start with no error means the session is live). The adapter
    MUST be connected BEFORE the run starts. Then — **confirm with the user before spending**, since
    a run calls real LLM providers and incurs real cost — call `run_starter_evaluation`
-   `{ agentId, agentBlurb }` with the same blurb. Poll `get_run_status` `{ runId }` until it
-   completes. Keep the adapter process up for the whole run.
+   `{ agentId, agentBlurb }` with the **short 1–3 sentence blurb** from step 4 (not the full
+   `create_agent` description). Poll `get_run_status` `{ runId }` until it completes. Keep the
+   adapter process up for the whole run.
 
 6. **Report back.** Give the user the `agentId` and the report link
    `<origin>/agents/<agentId>/report/<reportId>` — `reportId` (== the run id) comes from
