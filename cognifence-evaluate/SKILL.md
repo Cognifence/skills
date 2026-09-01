@@ -53,16 +53,24 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 
      Python:
      ```python
+     import asyncio
+     import os
+
      from cognifence_connect import connect
+
      async def on_message(msg, ctx):
          return await reply(msg.body)               # ← the step-2 (message)->reply handler
-     agent = await connect(
-         url=os.environ["COGNI_CONNECT_URL"],
-         token=os.environ["COGNI_CONNECT_KEY"],
-         manifest={"channels": [{"name": "chat", "direction": "duplex"}], "tools": []},
-         on_message=on_message,
-     )
-     await agent.wait()
+
+     async def main():
+         agent = await connect(
+             url=os.environ["COGNI_CONNECT_URL"],
+             token=os.environ["COGNI_CONNECT_KEY"],
+             manifest={"channels": [{"name": "chat", "direction": "duplex"}], "tools": []},
+             on_message=on_message,
+         )
+         await agent.wait()
+
+     asyncio.run(main())
      ```
    - That snippet IS the integration — nothing else to bolt on. In particular, do NOT add
      OpenTelemetry/OTEL tracing or any observability wiring (Cognifence already captures traces for
