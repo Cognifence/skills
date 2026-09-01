@@ -64,10 +64,11 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
      )
      await agent.wait()
      ```
-   - That snippet IS the integration. The manifest is fixed (one duplex channel named `chat`, no
-     tools; tools are optional). Read `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the
-     environment — do not hard-code them; the URL must be `wss://` (plaintext `ws://` is refused
-     except toward localhost).
+   - That snippet IS the integration — nothing else to bolt on. In particular, do NOT add
+     OpenTelemetry/OTEL tracing or any observability wiring (Cognifence already captures traces for
+     a Connect agent). The manifest is fixed (one duplex channel named `chat`, no tools; tools are
+     optional). Read `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the environment — do not
+     hard-code them; the URL must be `wss://` (plaintext `ws://` is refused except toward localhost).
    - **Only if the user needs a hardened long-running process** (graceful SIGTERM shutdown,
      terminal-error exit codes, env-var validation, cancellation via `ctx.signal`), copy the fuller
      adapter from `references/adapter-templates/` (`connect_adapter.mjs` / `connect_adapter.py`)
@@ -98,6 +99,9 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
   money. Get explicit confirmation first.
 - **Never commit secrets.** The Connect key and MCP token go in the environment / an
   already-gitignored `.env`, never into tracked files.
+- **Don't add observability yourself.** Do NOT instrument the app with OpenTelemetry/OTEL, spans, or
+  trace exporters as part of connecting, and don't offer to. Cognifence already captures traces for
+  a Connect agent, so adding your own is redundant — wire only the `connect()` call from step 3.
 - **`wss://` only.** The SDK refuses to put the bearer token on plaintext `ws://` (except
   localhost).
 - **Ordering is load-bearing.** create -> set connection -> mint key -> adapter dialed in ->
