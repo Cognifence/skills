@@ -61,7 +61,7 @@ header.
 
 After configuring, confirm the tools are live before running the skill's steps. List the server's
 tools and check for `create_agent`, `set_agent_connection`, `mint_connect_key`,
-`run_starter_evaluation`, and `get_run_status`:
+`mint_telemetry_token`, `run_starter_evaluation`, and `get_run_status`:
 
 - Claude Code: `claude mcp list` shows `cogni` as connected; the tools appear as `mcp__cogni__*`.
 - Any client: a quick `tools/list` round trip should return the tool names above.
