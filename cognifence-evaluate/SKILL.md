@@ -22,10 +22,12 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 ## Steps
 
 1. **Confirm MCP tools are reachable.** Verify the Cognifence MCP tools `create_agent`,
-   `set_agent_connection`, `mint_connect_key`, `mint_telemetry_token`, and `run_starter_evaluation`
-   are callable in this session. If they are not, set the server up per `references/mcp-setup.md`
-   (the token comes from the app under **Organization > Integrations > MCP clients** — never invent
-   one, never commit one).
+   `set_agent_connection`, `mint_connect_key`, and `run_starter_evaluation` are callable in this
+   session. If they are not, set the server up per `references/mcp-setup.md` (the token comes from
+   the app under **Organization > Integrations > MCP clients** — never invent one, never commit
+   one). `mint_telemetry_token` is optional — it powers the recommended enrichment in step 4; if it
+   is not exposed (older server, telemetry disabled), skip enrichment rather than treating the whole
+   setup as broken.
 
 2. **Find the chat handler.** Detect the single `(message) -> reply` function in the user's repo —
    the one that takes user text and returns the agent's reply. If more than one plausibly fits, ask
@@ -108,11 +110,16 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
      `connectUrl` as `COGNI_CONNECT_URL`; if it is null, fall back to `wss://<origin>/connect/v1`.
    - `mint_telemetry_token` `{ agentId }` — **recommended, for richer results.** It returns a
      one-time `token`, an exporter-ready `otelIngestEndpoint`, and `otelExporterProtocol`. Set the
-     agent's OTLP exporter env (prefer the app's existing OTel config over hand-instrumenting):
-     `OTEL_EXPORTER_OTLP_ENDPOINT=<otelIngestEndpoint>`,
-     `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <token>`,
-     `OTEL_EXPORTER_OTLP_PROTOCOL=<otelExporterProtocol>` (most OTel SDKs auto-export once these are
-     set). Then call `set_agent_connection` `{ agentId, protocol: "cognifence_connect",
+     agent's OTLP **trace** exporter env (prefer the app's existing OTel config over
+     hand-instrumenting), using the trace-specific vars so any metrics/logs pipeline is left alone:
+     `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=<otelIngestEndpoint>`,
+     `OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=Bearer <token>`,
+     `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=<otelExporterProtocol>` (most OTel SDKs auto-export once
+     these are set). **Don't clobber an existing pipeline:** if the app already exports its traces
+     somewhere (its own OTLP destination, a collector, or a backend like Datadog/Honeycomb), do NOT
+     repoint it — add Cognifence as a second span exporter or fan out through the collector. Set
+     these vars as the sole destination only when the app has no existing trace export. Then call
+     `set_agent_connection` `{ agentId, protocol: "cognifence_connect",
      enrichWithTelemetry: true }`. This folds the agent's own spans (tool calls, retrieval,
      sub-agent hops) into the evaluation on top of the Connect conversation. Skip only if the app
      genuinely can't emit OTel spans.
@@ -138,9 +145,10 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 - **Enrich with the agent's own traces (recommended).** As part of connecting, set up OTel export so
   the agent's internal spans (tool calls, retrieval, sub-agent hops) reach Cognifence — the Connect
   channel captures the conversation, not the agent's internals, so this makes the evaluation richer.
-  Use `mint_telemetry_token` + the three `OTEL_EXPORTER_OTLP_*` env vars and `enrichWithTelemetry:true`
-  (step 4). Prefer the app's existing OTel setup / env vars over hand-instrumenting; skip only if it
-  genuinely can't emit spans.
+  Use `mint_telemetry_token` + the three `OTEL_EXPORTER_OTLP_TRACES_*` env vars and
+  `enrichWithTelemetry:true` (step 4). Prefer the app's existing OTel setup / env vars over
+  hand-instrumenting, and add Cognifence as a second exporter rather than repointing a pipeline the
+  app already uses; skip only if it genuinely can't emit spans.
 - **`wss://` only.** The SDK refuses to put the bearer token on plaintext `ws://` (except
   localhost).
 - **Ordering is load-bearing.** create -> set connection -> mint key -> (mint telemetry token +
