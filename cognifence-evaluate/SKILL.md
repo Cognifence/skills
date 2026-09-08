@@ -22,10 +22,10 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 ## Steps
 
 1. **Confirm MCP tools are reachable.** Verify the Cognifence MCP tools `create_agent`,
-   `set_agent_connection`, `mint_connect_key`, and `run_starter_evaluation` are callable in this
-   session. If they are not, set the server up per `references/mcp-setup.md` (the token comes from
-   the app under **Organization > Integrations > MCP clients** — never invent one, never commit
-   one).
+   `set_agent_connection`, `mint_connect_key`, `mint_telemetry_token`, and `run_starter_evaluation`
+   are callable in this session. If they are not, set the server up per `references/mcp-setup.md`
+   (the token comes from the app under **Organization > Integrations > MCP clients** — never invent
+   one, never commit one).
 
 2. **Find the chat handler.** Detect the single `(message) -> reply` function in the user's repo —
    the one that takes user text and returns the agent's reply. If more than one plausibly fits, ask
@@ -72,11 +72,12 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 
      asyncio.run(main())
      ```
-   - That snippet IS the integration — nothing else to bolt on. In particular, do NOT add
-     OpenTelemetry/OTEL tracing or any observability wiring (Cognifence already captures traces for
-     a Connect agent). The manifest is fixed (one duplex channel named `chat`, no tools; tools are
-     optional). Read `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the environment — do not
-     hard-code them; the URL must be `wss://` (plaintext `ws://` is refused except toward localhost).
+   - That snippet IS the conversation integration — nothing else to bolt on for the
+     message->reply path. (Exporting the agent's own OTel spans is a separate, recommended step —
+     see step 4's telemetry step — that enriches the evaluation with the agent's internal steps.)
+     The manifest is fixed (one duplex channel named `chat`, no tools; tools are optional). Read
+     `COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the environment — do not hard-code them; the
+     URL must be `wss://` (plaintext `ws://` is refused except toward localhost).
    - **Only if the user needs a hardened long-running process** (graceful SIGTERM shutdown,
      terminal-error exit codes, env-var validation, cancellation via `ctx.signal`), copy the fuller
      adapter from `references/adapter-templates/` (`connect_adapter.mjs` / `connect_adapter.py`)
@@ -105,6 +106,16 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
    - `mint_connect_key` `{ agentId }` -> store the returned `token` as `COGNI_CONNECT_KEY` in the
      user's env (the plaintext token is shown ONCE and is unrecoverable). Use the returned
      `connectUrl` as `COGNI_CONNECT_URL`; if it is null, fall back to `wss://<origin>/connect/v1`.
+   - `mint_telemetry_token` `{ agentId }` — **recommended, for richer results.** It returns a
+     one-time `token`, an exporter-ready `otelIngestEndpoint`, and `otelExporterProtocol`. Set the
+     agent's OTLP exporter env (prefer the app's existing OTel config over hand-instrumenting):
+     `OTEL_EXPORTER_OTLP_ENDPOINT=<otelIngestEndpoint>`,
+     `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <token>`,
+     `OTEL_EXPORTER_OTLP_PROTOCOL=<otelExporterProtocol>` (most OTel SDKs auto-export once these are
+     set). Then call `set_agent_connection` `{ agentId, protocol: "cognifence_connect",
+     enrichWithTelemetry: true }`. This folds the agent's own spans (tool calls, retrieval,
+     sub-agent hops) into the evaluation on top of the Connect conversation. Skip only if the app
+     genuinely can't emit OTel spans.
 
 5. **Start the adapter, then run.** Launch the adapter and confirm it dialed in (the SDK completes
    `session.hello` on start; a clean start with no error means the session is live). The adapter
@@ -124,13 +135,17 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
   money. Get explicit confirmation first.
 - **Never commit secrets.** The Connect key and MCP token go in the environment / an
   already-gitignored `.env`, never into tracked files.
-- **Don't add observability yourself.** Do NOT instrument the app with OpenTelemetry/OTEL, spans, or
-  trace exporters as part of connecting, and don't offer to. Cognifence already captures traces for
-  a Connect agent, so adding your own is redundant — wire only the `connect()` call from step 3.
+- **Enrich with the agent's own traces (recommended).** As part of connecting, set up OTel export so
+  the agent's internal spans (tool calls, retrieval, sub-agent hops) reach Cognifence — the Connect
+  channel captures the conversation, not the agent's internals, so this makes the evaluation richer.
+  Use `mint_telemetry_token` + the three `OTEL_EXPORTER_OTLP_*` env vars and `enrichWithTelemetry:true`
+  (step 4). Prefer the app's existing OTel setup / env vars over hand-instrumenting; skip only if it
+  genuinely can't emit spans.
 - **`wss://` only.** The SDK refuses to put the bearer token on plaintext `ws://` (except
   localhost).
-- **Ordering is load-bearing.** create -> set connection -> mint key -> adapter dialed in ->
-  run. Only one adapter process may hold a given agent identity at a time.
+- **Ordering is load-bearing.** create -> set connection -> mint key -> (mint telemetry token +
+  enrichWithTelemetry) -> adapter dialed in -> run. Only one adapter process may hold a given agent
+  identity at a time.
 
 See `references/mcp-setup.md`, `references/connect-sdk.md`, and
 `references/adapter-templates/README.md` for the detail behind each step.
