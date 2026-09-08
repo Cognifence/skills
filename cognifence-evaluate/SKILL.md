@@ -22,12 +22,10 @@ plugins/skills or restart it (e.g. restart Claude Code) so this skill is discove
 ## Steps
 
 1. **Confirm MCP tools are reachable.** Verify the Cognifence MCP tools `create_agent`,
-   `set_agent_connection`, `mint_connect_key`, and `run_starter_evaluation` are callable in this
-   session. If they are not, set the server up per `references/mcp-setup.md` (the token comes from
-   the app under **Organization > Integrations > MCP clients** — never invent one, never commit
-   one). `mint_telemetry_token` is optional — it powers the recommended enrichment in step 4; if it
-   is not exposed (older server, telemetry disabled), skip enrichment rather than treating the whole
-   setup as broken.
+   `set_agent_connection`, `mint_connect_key`, `mint_telemetry_token`, and `run_starter_evaluation`
+   are callable in this session. If they are not, set the server up per `references/mcp-setup.md`
+   (the token comes from the app under **Organization > Integrations > MCP clients** — never invent
+   one, never commit one).
 
 2. **Find the chat handler.** Detect the single `(message) -> reply` function in the user's repo —
    the one that takes user text and returns the agent's reply. If more than one plausibly fits, ask
