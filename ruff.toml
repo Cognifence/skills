@@ -1,0 +1,29 @@
+# The Connect Python SDK's Ruff policy, trimmed to what the adapter templates need.
+line-length = 100
+target-version = "py312"
+
+[lint]
+preview = true
+explicit-preview-rules = true
+select = [
+    "ALL",
+    "D401",  # Imperative summaries, not selected by the Google convention.
+]
+ignore = [
+    "COM812",  # The formatter owns trailing commas.
+    "CPY",  # Licensing is in LICENSE, not per-file headers.
+    "D10",  # Require docstrings where behavior is unclear, not on every public name.
+    "E501",  # Leave line wrapping to the formatter.
+    "INP001",  # The adapter templates are standalone scripts, not packages.
+    "T20",  # The adapters log to stderr with print.
+]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[format]
+# Preserve the hand-aligned code examples in the Markdown docs.
+exclude = ["*.md"]

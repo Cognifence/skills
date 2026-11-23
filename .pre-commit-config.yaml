@@ -1,0 +1,58 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # Two trailing spaces are a Markdown line break.
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-merge-conflict
+        # Without it the hook only runs mid-merge, so CI's --all-files run would never catch a marker.
+        args: [--assume-in-merge]
+      - id: check-added-large-files
+        # Without it the hook only checks newly added files, so CI's --all-files run checks nothing.
+        args: [--maxkb=1000, --enforce-all]
+
+  # Staged changes only, so a secret is stopped before it is pushed.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      # Python files only: the code blocks in the Markdown docs keep their hand-aligned comments.
+      - id: ruff-check
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        # Lockfile hashes are generated, not prose.
+        exclude: '(^|/)bun\.lock$'
+
+  # Runs shellcheck on run: blocks when shellcheck is on PATH (it is on CI runners).
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.32.0
+    hooks:
+      # --offline skips the GitHub API audits, so a local GH_TOKEN never changes the result.
+      - id: zizmor
+        args: [--no-progress, --offline]
