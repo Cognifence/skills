@@ -5,12 +5,12 @@
 [![Node.js 22.20+](https://img.shields.io/badge/Node.js-%E2%89%A522.20-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[Agent Skills](https://agentskills.io) that teach your coding agent (Claude Code, Codex, Amp, …) to
-connect your agent to the Cognifence evaluation platform and run evaluations. Each skill is a
-folder with a `SKILL.md` procedure your coding agent follows, plus the references it reads when a
-step needs them.
+[Agent Skills](https://agentskills.io) that teach your coding agent (Claude Code, Codex, Amp,
+Cursor, GitHub Copilot, Gemini CLI, OpenCode, …) to connect your agent to the Cognifence
+evaluation platform and run evaluations. Each skill is a folder with a `SKILL.md` procedure your
+coding agent follows, plus the references it reads when a step needs them.
 
-[Documentation](https://docs.cognifence.ai/skills/) · [Security](SECURITY.md)
+[Documentation](https://docs.cognifence.ai/skills/) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 ## Installation
 
@@ -21,10 +21,11 @@ Install a skill into your project:
 npx skills add Cognifence/skills --skill cognifence-evaluate
 ```
 
-Pass `-a` to choose the coding agents to install for (such as `claude-code`, `codex`, or `amp`),
-`-g` to install for your user instead of the project, and `--list` to list the skills without
-installing. Reload your coding agent's skills or restart it afterwards so it discovers the new
-skill.
+Pass `-a` to choose the coding agents to install for (such as `claude-code`, `codex`, `amp`,
+`cursor`, `github-copilot`, `gemini-cli`, `opencode`, or another
+[supported agent](https://github.com/vercel-labs/skills/blob/main/docs/agents.md)), `-g` to
+install for your user instead of the project, and `--list` to list the skills without installing.
+Reload your coding agent's skills or restart it afterwards so it discovers the new skill.
 
 Claude Code and Amp prefer a user-level copy of a skill over the project's copy (in Claude Code,
 `~/.claude/skills/` wins over `.claude/skills/`; in Amp, user skills win over `.agents/skills/`).
