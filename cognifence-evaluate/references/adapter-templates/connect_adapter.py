@@ -1,11 +1,11 @@
 """Forward each chat turn to your agent over Cognifence Connect.
 
 Install the SDK with `uv add cognifence-connect` (Python 3.12 or later) and run with
-COGNI_CONNECT_URL and COGNI_CONNECT_KEY in .env:
+COGNI_CONNECT_URL, COGNI_CONNECT_KEY, COGNI_CONNECT_DEPLOYMENT_ID and COGNI_CONNECT_NAME in .env:
 
     uv run --env-file .env python connect_adapter.py
 
-Run one adapter per Connect key: a second one replaces the first.
+Run one adapter per COGNI_CONNECT_DEPLOYMENT_ID: a second one replaces the first.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from cognifence_connect import ConnectError, SupersededError, connect
-from cognifence_connect.schema import Manifest, ManifestChannelDecl
+from cognifence_connect.schema import Manifest, ManifestChannelDecl, RegisterConnection
 
 if TYPE_CHECKING:
     from cognifence_connect import MessageContext
@@ -42,12 +42,27 @@ async def on_message(message: ChannelSendParams, _context: MessageContext) -> st
 async def main() -> None:
     url = os.environ.get("COGNI_CONNECT_URL")
     token = os.environ.get("COGNI_CONNECT_KEY")
-    if not url or not token:
-        print("Set COGNI_CONNECT_URL and COGNI_CONNECT_KEY in the environment.", file=sys.stderr)
+    deployment_id = os.environ.get("COGNI_CONNECT_DEPLOYMENT_ID")
+    name = os.environ.get("COGNI_CONNECT_NAME")
+    if not (url and token and deployment_id and name):
+        print(
+            "Set COGNI_CONNECT_URL, COGNI_CONNECT_KEY, COGNI_CONNECT_DEPLOYMENT_ID and "
+            "COGNI_CONNECT_NAME in the environment.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
-        agent = await connect(url=url, token=token, manifest=MANIFEST, on_message=on_message)
+        agent = await connect(
+            url=url,
+            token=token,
+            # Reused on every restart with the same ID; each start reports the code it runs.
+            connection=RegisterConnection(mode="register", deployment_id=deployment_id, name=name),
+            # For a local checkout, keep its evaluations out of main-line history with
+            # code=CodeVersion(main=False) (CodeVersion from cognifence_connect.schema).
+            manifest=MANIFEST,
+            on_message=on_message,
+        )
     except ConnectError as exc:
         print(f"connect failed: {exc}", file=sys.stderr)
         sys.exit(1)

@@ -78,7 +78,8 @@ calls.
    to that function. For a hardened long-running process, it copies a fuller
    [adapter template](cognifence-evaluate/references/adapter-templates/) instead.
 4. Writes a full description of your agent from your repository, asks you to fill the gaps,
-   and creates the agent, its Connect connection, and a Connect key over MCP. It recommends
+   and creates the agent and a Connect key over MCP; the adapter registers the agent's Connect
+   connection itself when it connects (SDK 0.10+). It recommends
    sending your agent's OpenTelemetry spans over the Connect socket, through the tracer provider
    you already use, so the evaluation sees its tool calls.
 5. Starts the adapter, confirms it connected, and asks you before starting the starter
@@ -90,5 +91,5 @@ calls.
 The skill never puts the Connect key or MCP token in tracked files. The MCP token stays in your
 coding agent's MCP config or environment; the Connect key lives in the adapter's environment or a
 gitignored `.env`. Connect URLs must use `wss://`; the SDK refuses plaintext
-`ws://` except toward localhost. Only one adapter process may hold an agent's identity at a
-time.
+`ws://` except toward localhost. Only one adapter process may serve a deployment ID at a time;
+copies with different deployment IDs, such as staging and a laptop, run side by side.

@@ -1,10 +1,11 @@
 // Forward each chat turn to your agent over Cognifence Connect.
 //
 // Install the SDK with `bun add @cognifence/connect` (or `npm install @cognifence/connect`) and
-// run with COGNI_CONNECT_URL and COGNI_CONNECT_KEY in .env:
+// run with COGNI_CONNECT_URL, COGNI_CONNECT_KEY, COGNI_CONNECT_DEPLOYMENT_ID and
+// COGNI_CONNECT_NAME in .env:
 // `node --env-file=.env connect_adapter.mjs`
 //
-// Run one adapter per Connect key: a second one replaces the first.
+// Run one adapter per COGNI_CONNECT_DEPLOYMENT_ID: a second one replaces the first.
 
 import { connect, SupersededError } from '@cognifence/connect';
 
@@ -18,11 +19,15 @@ async function reply(message, signal) {
   return `echo: ${message}`;
 }
 
-const url = process.env.COGNI_CONNECT_URL;
-const token = process.env.COGNI_CONNECT_KEY;
-if (!url || !token) {
+const {
+  COGNI_CONNECT_URL: url,
+  COGNI_CONNECT_KEY: token,
+  COGNI_CONNECT_DEPLOYMENT_ID: deploymentId,
+  COGNI_CONNECT_NAME: name,
+} = process.env;
+if (!url || !token || !deploymentId || !name) {
   console.error(
-    'Set COGNI_CONNECT_URL and COGNI_CONNECT_KEY in the environment.',
+    'Set COGNI_CONNECT_URL, COGNI_CONNECT_KEY, COGNI_CONNECT_DEPLOYMENT_ID and COGNI_CONNECT_NAME in the environment.',
   );
   process.exit(1);
 }
@@ -37,6 +42,10 @@ try {
   agent = await connect({
     url,
     token,
+    // Reused on every restart with the same ID; each start reports the code it runs.
+    connection: { mode: 'register', deploymentId, name },
+    // For a local checkout, keep its evaluations out of main-line history:
+    // code: { main: false },
     manifest,
     onMessage: async (message, context) => reply(message.body, context.signal),
   });

@@ -7,8 +7,11 @@ existing agent. Copy the one that matches the user's stack:
 - **`connect_adapter.py`**: Python projects (run with `uv`).
 
 Both declare the same fixed manifest (one duplex channel named `chat`, no tools), read
-`COGNI_CONNECT_URL` and `COGNI_CONNECT_KEY` from the environment, and handle the SDK's terminal
-states: exit 0 on `SupersededError`, non-zero on a real refusal.
+`COGNI_CONNECT_URL`, `COGNI_CONNECT_KEY`, `COGNI_CONNECT_DEPLOYMENT_ID` and `COGNI_CONNECT_NAME`
+from the environment, register that connection with the code version they run, and handle the
+SDK's terminal states: exit 0 on `SupersededError`, non-zero on a real refusal. A commented-out
+`main: false` line is there for a local checkout; leave it out for a deployed build. They need
+Connect SDK 0.10 or later.
 
 ## Wire up the handler
 
