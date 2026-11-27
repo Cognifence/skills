@@ -58,7 +58,8 @@ with `npx skills update -g` or remove it with `npx skills remove -g cognifence-e
 ### cognifence-evaluate
 
 Connects your existing chat agent to Cognifence over the Connect WebSocket, provisions it
-through the Cognifence MCP tools, and runs a starter evaluation. The procedure is in
+through the Cognifence MCP tools, runs the integration check until every channel and tool of the
+agent is triggered or skipped, and runs a starter evaluation. The procedure is in
 [`SKILL.md`](cognifence-evaluate/SKILL.md). It triggers when you ask your coding agent to
 connect your agent or chatbot to Cognifence, run an evaluation, or red-team or safety-test
 your chatbot.
@@ -79,12 +80,16 @@ calls.
    [adapter template](cognifence-evaluate/references/adapter-templates/) instead.
 4. Writes a full description of your agent from your repository, asks you to fill the gaps,
    and creates the agent and a Connect key over MCP; the adapter registers the agent's Connect
-   connection itself when it connects (SDK 0.10+). It recommends
-   sending your agent's OpenTelemetry spans over the Connect socket, through the tracer provider
-   you already use, so the evaluation sees its tool calls.
-5. Starts the adapter, confirms it connected, and asks you before starting the starter
-   evaluation, because a run calls real LLM providers and costs money.
-6. Gives you the agent ID and the link to the evaluation's results.
+   connection itself when it connects. It sends your agent's OpenTelemetry spans over the Connect
+   socket, through the tracer provider you already use, so Cognifence can verify its tool calls.
+5. Starts the adapter and tests the connection with one real message.
+6. Runs the integration check, in which a simulated user tries every channel and tool of your
+   agent, fixes what it couldn't trigger and runs it again until every item is triggered or
+   skipped. It asks you before skipping any item.
+7. Asks you before starting the starter evaluation, because a run calls real LLM providers and
+   costs money.
+8. Gives you the agent ID, what the integration check found and the link to the evaluation's
+   results.
 
 </details>
 

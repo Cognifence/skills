@@ -29,5 +29,5 @@ assistant's reply as a string.
 - JS: `node --env-file=.env connect_adapter.mjs`
 - Python: `uv run --env-file .env python connect_adapter.py`
 
-For an evaluation, start it in its own session as step 5 of `SKILL.md` shows, and confirm it logs
-`dialed in` before the run starts.
+For the integration check and an evaluation, start it in its own session as step 5 of `SKILL.md`
+shows, and confirm it logs `dialed in` before the check or run starts.
